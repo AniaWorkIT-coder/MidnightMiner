@@ -1,6 +1,6 @@
 # Easy Guide to Running Midnight Miner on Windows
 
-This guide will help you start mining NIGHT tokens on Windows.
+This guide will help you start mining NIGHT tokens on Windows with MidnightMiner. If you have any questions, you can post them [here](https://www.reddit.com/r/Midnight/comments/1onpvk5/comment/nn40j1r/) or message @djeanql on Discord.
 
 ## What This Software Does
 
@@ -11,35 +11,40 @@ Midnight Miner automatically solves puzzles to earn NIGHT tokens. It runs on you
 Python is the programming language this software runs on.
 
 1. Go to [python.org/downloads](https://www.python.org/downloads/)
-2. Download the latest version for Windows
-3. **Important**: When installing, check the box that says "Add Python to PATH"
-4. Click "Install Now"
+2. Download 3.13.x for windows
+4. Click "Install Now" and click through the steps (no need to change any config)
 5. Wait for installation to complete
 
-## Step 2: Download the Software
+Alternatively, you can install [Python 3.13](https://apps.microsoft.com/detail/9pnrbtzxmb4z) from the Microsoft store.
 
-1. Download all the files from this repository to a folder on your computer ("Code" button on top right -> Download ZIP)
-2. Extract the ZIP anywhere (for example: `C:\Users\YourName\Downloads\midnight_miner`)
+## Step 2: Install Git
 
-## Step 3: Install Required Components
+Git allows for the miner to be easily downloaded and updated from the terminal.
+
+1. Go to [git-scm.com/install/windows](https://git-scm.com/install/windows)
+2. Download the standalone installer (x64)
+3. Run the installer and click through steps, leave all the configuration options as-is
+
+## Step 3: Download MidnightMiner
 
 1. Open Command Prompt:
    - Press `Windows`
    - Type `cmd` and press Enter
+2. Type `git clone https://github.com/djeanql/MidnightMiner`
+3. Then enter the folder with `cd MidnightMiner`
 
-2. Navigate to the folder where you saved the files:
-   ```
-   cd C:\Users\YourName\Downloads\midnight_miner
-   ```
-   (Replace with your actual folder path)
+## Step 4: Install Dependancies
 
-3. Install the required components by typing:
+
+Install the required dependancies by typing:
    ```
    pip install wasmtime requests pycardano cbor2 portalocker
    ```
-   Press Enter and wait for installation to finish
+Press Enter and wait for installation to finish
 
-## Step 4: Start Mining
+If you get a command not found error, you can use `python -m pip` instead of `pip`
+
+## Step 5: Start Mining
 
 **For a single wallet** (good for testing):
 ```
@@ -55,7 +60,20 @@ Replace `4` with the number of wallets you want to use. Each wallet uses one CPU
 
 > **Tip**: If you have a 6-core processor, try `--workers 6`. Don't use more workers than you have CPU cores.
 
-## Step 5: Understanding the Dashboard
+## ⚠️ Update Regularly
+
+This software will be updated very frequently, so it is important you update it to earn the highest rewards. To update, run this command while in the MidnightMiner folder:
+```
+git pull
+```
+
+This will fetch any changes made in this repository
+
+## Back Up Your Wallet File
+
+It is import that you back up `wallets.json`, which is in the same folder as ther miner. Copy it to a safe location. If you increase the number of worrkers with the --workers option, new wallets will be added so you should back it up again.
+
+## The Dashboard
 
 Once running, you'll see a dashboard that updates automatically:
 
@@ -63,12 +81,12 @@ Once running, you'll see a dashboard that updates automatically:
 - **Challenge**: The puzzle being solved
 - **Attempts**: How many guesses have been tried
 - **H/s**: Guesses per second
-- **Completed**: Number of puzzles solved
+- **Completed**: Number of puzzles solved, number since launching the miner is in brackets
 - **NIGHT**: Estimated token rewards
 
 Press `Ctrl+C` to stop the miner anytime.
 
-## Step 6: Accessing Your Tokens
+## Accessing Your Tokens
 
 Your earned tokens are stored in wallets created by the software. To access them:
 
@@ -83,13 +101,3 @@ Your earned tokens are stored in wallets created by the software. To access them
    - Open Eternl wallet
    - Go to Add Wallet -> More -> CLI Signing Keys
    - Select the files from the `skeys` folder
-
-## Updating the Software
-
-To get the latest improvements:
-
-1. Download the new files from github
-2. Copy over your `wallets.json` and `challenges.json` files into the new folder
-3. Restart the miner
-
-
