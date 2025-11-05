@@ -423,9 +423,9 @@ class MinerWorker:
 
             # Check if this is NOT the "Solution already exists" error
             if not ("Solution already exists" in error_detail):
-                # Append solution to solutions.txt
+                # Append solution to solutions.csv
                 try:
-                    with open("solutions.txt", "a") as f:
+                    with open("solutions.csv", "a") as f:
                         f.write(f"{address},{challenge['challenge_id']},{nonce}\n")
                 except Exception as log_err:
                     self.logger.error(f"Worker {self.worker_id} ({self.short_addr}): Failed to write solution to file: {log_err}")
@@ -434,9 +434,9 @@ class MinerWorker:
         except Exception as e:
             self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Solution submission error for challenge {challenge['challenge_id']} - {e}")
 
-            # Append solution to solutions.txt for non-HTTP errors
+            # Append solution to solutions.csv for non-HTTP errors
             try:
-                with open("solutions.txt", "a") as f:
+                with open("solutions.csv", "a") as f:
                     f.write(f"{address},{challenge['challenge_id']},{nonce}\n")
             except Exception as log_err:
                 self.logger.error(f"Worker {self.worker_id} ({self.short_addr}): Failed to write solution to file: {log_err}")
@@ -702,7 +702,7 @@ def get_wallet_statistics(wallet_address, api_base):
         response = requests.get(f"{api_base}/statistics/{wallet_address}", timeout=5)
         response.raise_for_status()
         return response.json()
-    except:
+    except Exception:
         return None
 
 
