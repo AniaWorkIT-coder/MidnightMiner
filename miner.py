@@ -407,7 +407,7 @@ class MinerWorker:
         url = f"{self.api_base.rstrip('/')}/solution/{address}/{challenge['challenge_id']}/{nonce}"
 
         try:
-            response = requests.post(url, json={})
+            response = requests.post(url, json={}, timeout=15)
             response.raise_for_status()
             data = response.json()
             success = data.get("crypto_receipt") is not None
@@ -420,9 +420,27 @@ class MinerWorker:
         except requests.exceptions.HTTPError as e:
             error_detail = e.response.text
             self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Solution REJECTED for challenge {challenge['challenge_id']} - {e.response.status_code}: {error_detail}")
+
+            # Check if this is NOT the "Solution already exists" error
+            if not ("Solution already exists" in error_detail):
+                # Append solution to solutions.txt
+                try:
+                    with open("solutions.txt", "a") as f:
+                        f.write(f"{address},{challenge['challenge_id']},{nonce}\n")
+                except Exception as log_err:
+                    self.logger.error(f"Worker {self.worker_id} ({self.short_addr}): Failed to write solution to file: {log_err}")
+
             return (False, True)
         except Exception as e:
             self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Solution submission error for challenge {challenge['challenge_id']} - {e}")
+
+            # Append solution to solutions.txt for non-HTTP errors
+            try:
+                with open("solutions.txt", "a") as f:
+                    f.write(f"{address},{challenge['challenge_id']},{nonce}\n")
+            except Exception as log_err:
+                self.logger.error(f"Worker {self.worker_id} ({self.short_addr}): Failed to write solution to file: {log_err}")
+
             return (False, False)
 
     def mine_challenge_native(self, challenge, rom, max_time=3600, mining_address=None):
@@ -681,7 +699,7 @@ def display_dashboard(status_dict, num_workers, wallet_manager, challenge_tracke
 def get_wallet_statistics(wallet_address, api_base):
     """Fetch statistics for a single wallet"""
     try:
-        response = requests.get(f"{api_base}/statistics/{wallet_address}")
+        response = requests.get(f"{api_base}/statistics/{wallet_address}", timeout=5)
         response.raise_for_status()
         return response.json()
     except:
@@ -691,12 +709,22 @@ def get_wallet_statistics(wallet_address, api_base):
 def fetch_total_night_balance(wallet_manager, api_base):
     """Fetch total NIGHT balance across all wallets once at startup"""
     total_night = 0.0
+    failed = False
+
     for wallet in wallet_manager.wallets:
         stats = get_wallet_statistics(wallet['address'], api_base)
         if stats:
             local = stats.get('local', {})
             night = local.get('night_allocation', 0) / 1000000.0
             total_night += night
+
+        else:
+            failed = True
+            break
+
+    if failed:
+        print("[WARNING] Some wallet statistics could not be fetched.")
+
     return total_night
 
 
