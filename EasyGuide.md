@@ -10,8 +10,8 @@ Midnight Miner automatically solves puzzles to earn NIGHT tokens. It runs on you
 
 Python is the programming language this software runs on.
 
-1. Go to [python.org/downloads](https://www.python.org/downloads/)
-2. Download 3.13.x for windows
+1. Go to [python.org/downloads](https://www.python.org/downloads/release/python-3139/)
+2. Download 3.13.9 installer for windows (64 bit)
 4. Click "Install Now" and click through the steps (no need to change any config)
 5. Wait for installation to complete
 
