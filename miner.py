@@ -387,6 +387,7 @@ class MinerWorker:
 
         # Track retry attempts for submission
         self.current_challenge_id = None
+        self.current_challenge_data = None  # Store full challenge data for retries
         self.current_nonce = None
         self.submission_retry_count = 0
 
@@ -452,6 +453,7 @@ class MinerWorker:
             self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Solution REJECTED for challenge {challenge['challenge_id']} - {e.response.status_code}: {error_detail}")
 
             # Check if this is NOT the "Solution already exists" error
+            # Save to CSV since this is a definitive rejection (not a network error)
             if not ("Solution already exists" in error_detail):
                 # Append solution to solutions.csv
                 if not append_solution_to_csv(address, challenge['challenge_id'], nonce):
@@ -460,11 +462,7 @@ class MinerWorker:
             return (False, True)
         except Exception as e:
             self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Solution submission error for challenge {challenge['challenge_id']} - {e}")
-
-            # Append solution to solutions.csv for non-HTTP errors
-            if not append_solution_to_csv(address, challenge['challenge_id'], nonce):
-                self.logger.error(f"Worker {self.worker_id} ({self.short_addr}): Failed to write solution to file")
-
+            # Network error - return False and let retry logic handle CSV writing
             return (False, False)
 
     def mine_challenge_native(self, challenge, rom, max_time=3600, mining_address=None):
@@ -522,29 +520,38 @@ class MinerWorker:
 
         while True:
             try:
-                # Get current challenge from API and register it
-                api_challenge = self.get_current_challenge()
-                if api_challenge:
-                    is_new = self.challenge_tracker.register_challenge(api_challenge)
-                    if is_new:
-                        self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Discovered new challenge {api_challenge['challenge_id']}")
+                # If we're retrying a submission, use the stored challenge data
+                if self.current_nonce is not None and self.current_challenge_data is not None:
+                    # In retry mode - use stored challenge
+                    challenge = self.current_challenge_data
+                    challenge_id = challenge["challenge_id"]
+                    self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Retrying submission for challenge {challenge_id} (attempt {self.submission_retry_count + 1}/3)")
+                else:
+                    # Not in retry mode - fetch new challenges
+                    # Get current challenge from API and register it
+                    api_challenge = self.get_current_challenge()
+                    if api_challenge:
+                        is_new = self.challenge_tracker.register_challenge(api_challenge)
+                        if is_new:
+                            self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Discovered new challenge {api_challenge['challenge_id']}")
 
-                # Find an unsolved challenge for this wallet
-                challenge = self.challenge_tracker.get_unsolved_challenge(self.address)
+                    # Find an unsolved challenge for this wallet
+                    challenge = self.challenge_tracker.get_unsolved_challenge(self.address)
 
-                if not challenge:
-                    # No more challenges available for this wallet - exit worker
-                    self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): All challenges completed, exiting worker")
-                    self.update_status(current_challenge='All completed', attempts=0, hash_rate=0)
-                    return
+                    if not challenge:
+                        # No more challenges available for this wallet - exit worker
+                        self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): All challenges completed, exiting worker")
+                        self.update_status(current_challenge='All completed', attempts=0, hash_rate=0)
+                        return
 
-                challenge_id = challenge["challenge_id"]
+                    challenge_id = challenge["challenge_id"]
 
-                # Reset retry count when starting a new challenge
-                if self.current_challenge_id != challenge_id:
-                    self.current_challenge_id = challenge_id
-                    self.current_nonce = None
-                    self.submission_retry_count = 0
+                    # Reset retry state when starting a new challenge
+                    if self.current_challenge_id != challenge_id:
+                        self.current_challenge_id = challenge_id
+                        self.current_challenge_data = None
+                        self.current_nonce = None
+                        self.submission_retry_count = 0
 
                 # Check deadline
                 deadline = datetime.fromisoformat(challenge["latest_submission"].replace('Z', '+00:00'))
@@ -590,7 +597,10 @@ class MinerWorker:
                 if self.current_nonce is None:
                     max_mine_time = min(time_left * 0.8, 3600)
                     nonce = self.mine_challenge_native(challenge, rom, max_time=max_mine_time, mining_address=mining_address)
-                    self.current_nonce = nonce
+                    if nonce:
+                        # Store both nonce and challenge data for retry
+                        self.current_nonce = nonce
+                        self.current_challenge_data = challenge
                 else:
                     # Retrying with previously found nonce
                     nonce = self.current_nonce
@@ -607,20 +617,22 @@ class MinerWorker:
                         self.challenge_tracker.mark_solved(challenge_id, self.address)
                         self.update_status(current_challenge='Solution accepted!')
                         self.current_nonce = None
+                        self.current_challenge_data = None
                         self.submission_retry_count = 0
                         time.sleep(5)
                     elif should_mark_solved:
                         self.challenge_tracker.mark_solved(challenge_id, self.address)
                         self.update_status(current_challenge='Solution rejected - moving on')
                         self.current_nonce = None
+                        self.current_challenge_data = None
                         self.submission_retry_count = 0
                         time.sleep(5)
                     else:
                         # Network error - check retry count
                         self.submission_retry_count += 1
-                        if self.submission_retry_count >= 3:
-                            # Max retries reached, save to CSV and move on
-                            self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Max retries reached for challenge {challenge_id}, saving to solutions.csv")
+                        if self.submission_retry_count >= 2:
+                            # Max retries (2) reached, save to CSV and move on
+                            self.logger.warning(f"Worker {self.worker_id} ({self.short_addr}): Max retries (2) reached for challenge {challenge_id}, saving to solutions.csv and moving on")
                             submission_address = mining_address if mining_address else self.address
                             if not append_solution_to_csv(submission_address, challenge_id, nonce):
                                 self.logger.error(f"Worker {self.worker_id} ({self.short_addr}): Failed to save solution to CSV")
@@ -628,12 +640,13 @@ class MinerWorker:
                             self.challenge_tracker.mark_solved(challenge_id, self.address)
                             self.update_status(current_challenge='Saved to CSV, moving on')
                             self.current_nonce = None
+                            self.current_challenge_data = None
                             self.submission_retry_count = 0
                             time.sleep(5)
                         else:
-                            # Retry again
-                            self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Submission failed, retry {self.submission_retry_count}/2")
-                            self.update_status(current_challenge=f'Submission error - retry {self.submission_retry_count}/2')
+                            # Retry again (will retry on next loop iteration)
+                            self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): Submission failed, will retry (attempt {self.submission_retry_count + 1}/3)")
+                            self.update_status(current_challenge=f'Submission error - will retry')
                             time.sleep(15)
 
                     if mining_for_developer:
@@ -643,6 +656,7 @@ class MinerWorker:
                     self.logger.info(f"Worker {self.worker_id} ({self.short_addr}): No solution found for challenge {challenge_id} within time limit")
                     self.update_status(current_challenge='No solution found')
                     self.current_nonce = None
+                    self.current_challenge_data = None
                     self.submission_retry_count = 0
 
                     if mining_for_developer:
