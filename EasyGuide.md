@@ -10,10 +10,10 @@ Midnight Miner automatically solves puzzles to earn NIGHT tokens. It runs on you
 
 Python is the programming language this software runs on.
 
-1. Go to [python.org/downloads](https://www.python.org/downloads/release/python-3139/)
-2. Download 3.13.9 installer for windows (64 bit)
-4. Click "Install Now" and click through the steps (no need to change any config)
-5. Wait for installation to complete
+1. Go to [python.org/downloads](https://www.python.org/downloads/)
+2. Download python installation manager for windows (64 bit)
+3. Open the installation manager from start menu. Then press Y on each step.
+4. Reboot
 
 Alternatively, you can install [Python 3.13](https://apps.microsoft.com/detail/9pnrbtzxmb4z) from the Microsoft store.
 
@@ -38,22 +38,22 @@ Git allows for the miner to be easily downloaded and updated from the terminal.
 
 Install the required dependencies by typing:
    ```
-   pip install requests pycardano cbor2 portalocker
+   py -m pip install requests pycardano cbor2 portalocker
    ```
 Press Enter and wait for installation to finish
 
-If you get a command not found error, you can use `python -m pip` instead of `pip`
+If you get a command not found error, you can try using `python` instead of `py`
 
 ## Step 5: Start Mining
 
 **For a single worker** (good for testing):
 ```
-python miner.py
+py miner.py
 ```
 
 **For multiple workers** (recommended for better earnings):
 ```
-python miner.py --workers 4
+py miner.py --workers 4
 ```
 
 Replace `4` with the number of workers you want to use. Each worker uses roughly one CPU core and about 1GB of memory. The miner will automatically create enough wallets for all workers and rotate through them as puzzles are completed.
