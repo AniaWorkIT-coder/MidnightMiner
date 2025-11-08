@@ -27,6 +27,10 @@ def submit_solution(address, challenge_id, nonce):
         error_detail = e.response.text
         if "Solution already exists" in error_detail:
             return ("already_exists", "Solution already exists")
+        elif "Submission window closed" in error_detail:
+            return ("rejected", "Submission window closed")
+        elif "Address is not registered" in error_detail:
+            return ("address_not_registered", "Address is not registered")
         else:
             return ("error", f"HTTP {e.response.status_code}: {error_detail}")
 
@@ -56,6 +60,8 @@ def main():
     results = {
         "success": 0,
         "already_exists": 0,
+        "submission_window_closed": 0,
+        "address_not_registered": 0,
         "rejected": 0,
         "error": 0
     }
@@ -86,10 +92,15 @@ def main():
             elif status == "already_exists":
                 print(f"✓ ALREADY EXISTS")
                 results["already_exists"] += 1
+            elif status == "submission_window_closed":
+                print(f"✗ SUBMISSION WINDOW CLOSED: {message}")
+                results["submission_window_closed"] += 1
+            elif status == "address_not_registered":
+                print(f"✗ ADDRESS NOT REGISTERED: {message}")
+                results["address_not_registered"] += 1
             elif status == "rejected":
                 print(f"✗ REJECTED: {message}")
                 results["rejected"] += 1
-                failed_solutions.append(line)
             else:
                 print(f"✗ ERROR: {message}")
                 results["error"] += 1
@@ -110,18 +121,19 @@ def main():
     print(f"  Total:                   {len(lines)}")
     print("="*70)
 
-    # Automatically rewrite solutions.csv with only failed submissions
+    # Automatically rewrite solutions.csv with only errored submissions
+    removed_count = results['success'] + results['already_exists'] + results['rejected'] + results['submission_window_closed'] + results['address_not_registered']
     if failed_solutions:
         with open(SOLUTIONS_FILE, 'w') as f:
             for solution in failed_solutions:
                 f.write(solution + '\n')
-        print(f"\n✓ Updated {SOLUTIONS_FILE} - kept {len(failed_solutions)} failed solution(s)")
-        print(f"  Removed {results['success'] + results['already_exists']} successful/existing solution(s)")
+        print(f"\n✓ Updated {SOLUTIONS_FILE} - kept {len(failed_solutions)} solution(s) with errors")
+        print(f"  Removed {removed_count} processed solution(s)")
     else:
         with open(SOLUTIONS_FILE, 'w') as f:
             f.truncate()
-        print(f"\n✓ All solutions submitted successfully or already existed - wiped {SOLUTIONS_FILE}")
-        print(f"  Removed {results['success'] + results['already_exists']} successful/existing solution(s)")
+        print(f"\n✓ All solutions processed without errors - wiped {SOLUTIONS_FILE}")
+        print(f"  Removed {removed_count} processed solution(s)")
 
     return 0
 
