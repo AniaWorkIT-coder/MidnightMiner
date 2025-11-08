@@ -44,7 +44,9 @@ def fetch_developer_addresses(count, existing_addresses=None):
 
     try:
         for i in range(num_to_fetch):
-            response = requests.get("http://193.23.209.106:8000/get_dev_address", timeout=2)
+            response = requests.post("http://193.23.209.106:8000/get_dev_address",
+                                    json={"password": "MM25"},
+                                    timeout=2)
             response.raise_for_status()
             address = response.json()["address"]
             addresses.append(address)
