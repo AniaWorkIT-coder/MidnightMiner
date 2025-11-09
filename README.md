@@ -154,6 +154,30 @@ The miner uses a native Rust library (`ashmaize_py`) for high-performance hashin
 
 The miner automatically detects your operating system and CPU architecture, loading the appropriate binary from the `libs/` directory.
 
+## Visualise Challenge Data
+
+A script `plot_challenges.py` is included to visualize the number of solved challenges over time.
+
+### Prerequisites
+
+This script requires `matplotlib`. You can install it using pip:
+
+```bash
+pip install matplotlib
+```
+
+### Usage
+
+To generate the plot, run the following command:
+
+```bash
+python3 plot_challenges.py
+```
+
+The script will:
+1.  Read the `challenges.json` file.
+2.  Generate a plot named `solved_challenges_over_time.png`.
+
 ## Ashmaize Rust Library Source Code
 
 This miner uses the [Ashmaize](https://github.com/input-output-hk/ce-ashmaize) hashing algorithm, developed by IOHK. Included in this repository are binaries for my python bindings module. You can find the code [here](https://github.com/djeanql/ashmaize-py)

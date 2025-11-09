@@ -114,3 +114,28 @@ You will need to claim your NIGHT tokens with the wallets created by the softwar
    - Open Eternl wallet
    - Go to Add Wallet -> More -> CLI Signing Keys
    - Select the files from the `skeys` folder
+
+## Visualising Mining Speed
+
+A script `plot_challenges.py` is included to visualize the number of solved challenges over time.
+
+### Setup
+
+This script requires `matplotlib`. You can install it using pip:
+
+```bash
+py -m pip install matplotlib
+```
+
+### Usage
+
+To generate the plot, run the following command:
+
+```bash
+py plot_challenges.py
+```
+
+The script will:
+1.  Read the `challenges.json` file.
+2.  Generate a plot named `solved_challenges_over_time.png`.
+3.  If you are running on a system with a graphical interface, it will also display the plot in a window.
