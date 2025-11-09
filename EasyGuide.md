@@ -135,7 +135,6 @@ To generate the plot, run the following command:
 py plot_challenges.py
 ```
 
-The script will:
-1.  Read the `challenges.json` file.
-2.  Generate a plot named `solved_challenges_over_time.png`.
-3.  If you are running on a system with a graphical interface, it will also display the plot in a window.
+The script will read the `challenges.json` file and generate a plot named `solved_challenges_over_time.png`.
+
+> **Note:** The graph uses the challenge's discovery time as an approximation for when solutions were found, as individual solution times are not stored.
