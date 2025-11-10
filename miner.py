@@ -371,7 +371,8 @@ class WalletManager:
         wallet_data['signature'] = cbor2.dumps(cose_sign1).hex()
 
     def _register_wallet_with_api(self, wallet_data, api_base):
-        """Register a wallet with the API. Returns True if successful or already registered."""
+        """Register a wallet with the API. Returns True if successful or already registered.
+        Raises an exception if registration fails."""
         url = f"{api_base}/register/{wallet_data['address']}/{wallet_data['signature']}/{wallet_data['pubkey']}"
         try:
             response = requests.post(url, json={})
@@ -382,9 +383,14 @@ class WalletManager:
                 error_msg = e.response.json().get('message', '')
                 if 'already' in error_msg.lower():
                     return True
-            return False
-        except Exception:
-            return False
+            # Registration failed - raise exception with details
+            raise Exception(f"Wallet registration failed: HTTP {e.response.status_code} - {e.response.text}")
+        except requests.exceptions.RequestException as e:
+            # Network error
+            raise Exception(f"Wallet registration failed: Network error - {str(e)}")
+        except Exception as e:
+            # Other error
+            raise Exception(f"Wallet registration failed: {str(e)}")
 
     def load_or_create_wallets(self, num_wallets, api_base, donation_enabled=True):
         first_time_setup = False
@@ -422,16 +428,30 @@ class WalletManager:
         for i in range(wallets_to_create):
             wallet = self.generate_wallet()
             self.sign_terms(wallet, api_base)
-            self.wallets.append(wallet)
             print(f"  Wallet {len(self.wallets)}: {wallet['address'][:40]}...")
 
-            # Register the wallet immediately
+            # Register the wallet immediately - this is critical
             print(f"    Registering wallet with API...")
-            if self._register_wallet_with_api(wallet, api_base):
+            try:
+                self._register_wallet_with_api(wallet, api_base)
                 print(f"    ✓ Registered successfully")
-            else:
-                print(f"    ✓ Already registered or registration complete")
+                # Only add wallet to list after successful registration
+                self.wallets.append(wallet)
+            except Exception as e:
+                print(f"\n{'='*70}")
+                print(f"FATAL ERROR: Failed to register wallet with API")
+                print(f"{'='*70}")
+                print(f"Wallet address: {wallet['address']}")
+                print(f"Error: {e}")
+                print(f"\nThe API may be unreachable or there may be a configuration issue.")
+                print(f"Mining with unregistered wallets will not earn any rewards.")
+                print(f"\nwallets.json has NOT been saved to prevent wasted mining.")
+                print(f"Please check your network connection and try again.")
+                print(f"{'='*70}\n")
+                logging.error(f"Wallet registration failed: {e}")
+                sys.exit(1)
 
+        # Only save wallets if all registrations succeeded
         with open(self.wallet_file, 'w') as f:
             json.dump(self.wallets, f, indent=2)
 
@@ -465,15 +485,24 @@ class WalletManager:
         return None
 
     def create_new_wallet(self, api_base):
-        """Generate and sign a new wallet on-the-fly"""
+        """Generate and sign a new wallet on-the-fly.
+        Raises exception if registration fails."""
         # Generate wallet outside lock (it's just crypto operations)
         wallet = self.generate_wallet()
         self.sign_terms(wallet, api_base)
 
-        # Register the wallet immediately
-        self._register_wallet_with_api(wallet, api_base)
+        # Register the wallet immediately - raises exception on failure
+        try:
+            self._register_wallet_with_api(wallet, api_base)
+        except Exception as e:
+            logging.error(f"Failed to register dynamically created wallet: {e}")
+            print("\nFATAL ERROR: Cannot register new wallet with API")
+            print(f"Error: {e}")
+            print("Mining cannot continue without wallet registration.\n")
+            print("Please check your network connection and try again.")
+            raise
 
-        # Add to list and save
+        # Add to list and save only after successful registration
         with self._lock:
             self.wallets.append(wallet)
             with open(self.wallet_file, 'w') as f:
