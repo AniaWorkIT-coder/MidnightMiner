@@ -10,7 +10,7 @@ If you are unfamiliar with python, and/or using windows, check out the [Easy Gui
 
 This is an unofficial tool, and has not been properly tested. Use it at your own risk.
 
-I will be updating and improving this software regularly. Please keep up to date by re-downloading from this repository and copying over your `wallets.json` and `challenges.json` files, or simply by running `git pull`. 
+I will be updating and improving this software regularly. Please keep up to date by re-downloading from this repository and copying over your `wallets.json` and `challenges.json` files, or simply by running `git pull`.
 
 ## How It Works
 
@@ -58,6 +58,81 @@ You can run the miner from your terminal.
     Each worker uses one CPU core and 1GB of RAM. The miner will automatically create enough wallets for all workers and rotate through them as challenges are completed. Each worker always mines to a unique wallet. Do not run more workers than your system is capable of.
 
 
+## Running as a Systemd Service (Linux Only)
+
+> **⚠️ Linux Only**: The `setup-service.sh` and `miner-cmds.sh` scripts are **Linux-only** and require systemd. They will not work on Windows or macOS. If you're using Windows or macOS, please run the miner manually using `python miner.py` instead.
+
+For Linux users, you can run the miner as a systemd service, which allows it to:
+- Start automatically on boot
+- Restart automatically if it crashes
+- Automatically pull the latest code from git before starting
+- Run in the background without a terminal
+
+The scripts automatically verify that you're running on Linux before proceeding. If you attempt to run them on Windows or macOS, they will display an error message and exit.
+
+### Setup
+
+Use the included `setup-service.sh` script to configure and install the service:
+
+1. **Set worker count and install**:
+   ```bash
+   ./setup-service.sh --workers 4 --install
+   ```
+   This creates the service configuration and installs it to systemd.
+
+2. **Start the service**:
+   ```bash
+   sudo systemctl start midnight-miner
+   ```
+
+3. **Enable auto-start on boot** (optional):
+   ```bash
+   sudo systemctl enable midnight-miner
+   ```
+
+### Updating the Service
+
+After pulling the latest code with `git pull`, update the service configuration:
+
+```bash
+# Update service file and reload systemd
+./setup-service.sh --update
+```
+
+To change the number of workers:
+
+```bash
+# Update workers to 8 and reload service
+./setup-service.sh --workers 8 --update
+```
+
+**Note:** After updating, restart the service for changes to take effect:
+```bash
+sudo systemctl restart midnight-miner
+```
+
+### Service Management
+
+The `setup-service.sh` script provides several management commands:
+
+- **Check status**: `./setup-service.sh --status`
+- **View logs**: `./setup-service.sh --logs`
+- **Restart service**: `./setup-service.sh --restart`
+- **Stop service**: `./setup-service.sh --stop`
+- **Start service**: `./setup-service.sh --start`
+- **Uninstall service**: `./setup-service.sh --uninstall`
+
+Alternatively, you can use standard systemd commands:
+```bash
+sudo systemctl status midnight-miner
+sudo systemctl restart midnight-miner
+sudo journalctl -u midnight-miner -f  # View logs
+```
+
+### Automatic Updates
+
+The service is configured to automatically run `git pull` before starting, ensuring you always run the latest code. If the git pull fails (e.g., network issues), the service will still start with the existing code.
+
 ## Resubmitting Failed Solutions
 
 If solutions fail to submit due to network issues or API errors, they are automatically saved to `solutions.csv`. To resubmit them:
@@ -69,12 +144,21 @@ You should run this once a day, as solutions can no longer be submitted after 24
 
 ## ⚠️ Update Regularly
 
-This software will be updated frequently, so it is VERY important you update it to earn the highest rewards. To update, run this command in the MidnightMiner directory:
+This software will be updated frequently, so it is VERY important you update it to earn the highest rewards.
+
+**For manual runs**: Update by running this command in the MidnightMiner directory:
 ```
 git pull
 ```
 
-I suggest running this once a day to make sure your miner is up-to-date.
+**For systemd service**: The service automatically runs `git pull` before starting, so you'll always have the latest code. However, if you want to update without restarting, you can still run `git pull` manually, then update the service configuration:
+```bash
+git pull
+./setup-service.sh --update
+sudo systemctl restart midnight-miner
+```
+
+I suggest checking for updates once a day to make sure your miner is up-to-date.
 
 
 ## Developer Donations
@@ -185,5 +269,7 @@ This miner uses the [Ashmaize](https://github.com/input-output-hk/ce-ashmaize) h
 ## Stars
 
 If you like MidnightMiner, why not star the repository?
+
+[![Star History Chart](https://api.star-history.com/svg?repos=djeanql/MidnightMiner&type=date&legend=top-left)](https://www.star-history.com/#djeanql/MidnightMiner&type=date&legend=top-left)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=djeanql/MidnightMiner&type=date&legend=top-left)](https://www.star-history.com/#djeanql/MidnightMiner&type=date&legend=top-left)

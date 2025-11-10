@@ -1,0 +1,6 @@
+*.log
+__pycache__/
+solutions.csv
+wallets.json
+midnight-miner.service
+midnight-miner.env
