@@ -1,0 +1,8 @@
+# Local runtime artifacts
+wallets.json
+miner.log
+solutions.csv
+proxy.json
+challenges.json
+devaddress.json
+
