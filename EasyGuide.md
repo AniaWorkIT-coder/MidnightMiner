@@ -101,12 +101,9 @@ You should run this once a day, as solutions can no longer be submitted after 24
 
 ## Claiming NIGHT
 
-> ⚠️ **WARNING**: An issue has been discovered in the Midnight statistics API resulting in your NIGHT allocation chaning after consolidating rewards. Please DO NOT run this script until the issue has been solved, or you risk loosing your rewards. Check this readme in a few days, if this warning has been removed it is safe to run.
+To make claiming easier, you need to send all earnings to a single address using `consolidate.py`. This allows the your NIGHT tokens to be claimed from a single wallet instead of having them spread across many wallets. You only need to run this once, and all future earnings will be donated. However the miner generates new wallets while mining, so it is best to run this script again at the end of the scavenger hunt to make sure all wallets are consolidated.
 
-
-To make claiming easier, you need to send all earnings to a single address using `consolidate.py`. This allows the your NIGHT tokens to be claimed from a single wallet instead of having them spread across many wallets.
-
-**Important:** The destination address must be registered at https://sm.midnight.gd first!
+**Important:** The destination address must be registered at https://sm.midnight.gd first! It is recommended to not use a wallet from wallets.json as your destination address for security reasons. It's safer to use an address from a wallet extension such as Eternl or Lace, after registering it with the online portal.
 
 **To consolidate:**
 ```
