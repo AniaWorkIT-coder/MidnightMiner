@@ -10,7 +10,7 @@ import requests
 
 from proxy_config import load_proxy_config
 
-DEFAULT_API_BASE = "https://scavenger.prod.gd.midnighttge.io/"
+DEFAULT_API_BASE = "https://scavenger.prod.gd.midnighttge.io"
 
 
 def discover_wallet_files(root: Path) -> Iterable[Path]:
@@ -50,7 +50,7 @@ def extract_addresses_from_json(path: Path) -> Set[str]:
 
 
 def fetch_wallet_statistics(session: requests.Session, wallet_address: str, api_base: str) -> Optional[Tuple[float, int, dict]]:
-    url = f"{api_base.rstrip('/')}/statistics/{wallet_address}"
+    url = f"{api_base}/statistics/{wallet_address}"
     try:
         response = session.get(url, timeout=8)
         response.raise_for_status()
